@@ -4,7 +4,13 @@ const User = require("../models/user.model");
 
 /* REGISTER */
 exports.register = async (req, res) => {
-  const { username, password, confirmPassword } = req.body;
+  let { username, password, confirmPassword } = req.body;
+
+ const decoded = Buffer.from(password, "base64").toString();
+   password = decoded.split(":")[0];
+
+    const decodedconfirmPassword = Buffer.from(confirmPassword, "base64").toString();
+   confirmPassword = decodedconfirmPassword.split(":")[0];
 
   // 1. Validate input
   if (!username || !password || !confirmPassword) {
@@ -39,10 +45,16 @@ exports.register = async (req, res) => {
 
 /* LOGIN (already present) */
 exports.login = async (req, res) => {
-  const { username, password } = req.body;
+  let { username, password } = req.body;
 
   const user = await User.findOne({ username });
-  if (!user || !bcrypt.compareSync(password, user.passwordHash)) {
+  if (!user) {
+    return res.status(401).json({ message: "Invalid credentials" });
+  }
+   const decoded = Buffer.from(password, "base64").toString();
+   password = decoded.split(":")[0];
+    const isMatch = await bcrypt.compare(password, user.passwordHash);
+  if (!isMatch) {
     return res.status(401).json({ message: "Invalid credentials" });
   }
 
